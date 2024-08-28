@@ -1,0 +1,103 @@
+#pragma version 10
+
+smart_contracts.wallets.contract.Wallets.approval_program:
+    // smart_contracts/wallets/contract.py:5
+    // class Wallets(ARC4Contract):
+    txn NumAppArgs
+    bz main_bare_routing@6
+    method "setBalace(uint64)void"
+    method "getBalance()uint64"
+    txna ApplicationArgs 0
+    match main_setBalace_route@2 main_getBalance_route@3
+    err // reject transaction
+
+main_setBalace_route@2:
+    // smart_contracts/wallets/contract.py:9
+    // @abimethod(allow_actions = ["OptIn"])
+    txn OnCompletion
+    int OptIn
+    ==
+    assert // OnCompletion is OptIn
+    txn ApplicationID
+    assert // is not creating
+    // smart_contracts/wallets/contract.py:5
+    // class Wallets(ARC4Contract):
+    txna ApplicationArgs 1
+    btoi
+    // smart_contracts/wallets/contract.py:9
+    // @abimethod(allow_actions = ["OptIn"])
+    callsub setBalace
+    int 1
+    return
+
+main_getBalance_route@3:
+    // smart_contracts/wallets/contract.py:13
+    // @abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    callsub getBalance
+    itob
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    return
+
+main_bare_routing@6:
+    // smart_contracts/wallets/contract.py:5
+    // class Wallets(ARC4Contract):
+    txn OnCompletion
+    !
+    assert // reject transaction
+    txn ApplicationID
+    !
+    assert // is creating
+    int 1
+    return
+
+
+// smart_contracts.wallets.contract.Wallets.setBalace(balance: uint64) -> void:
+setBalace:
+    // smart_contracts/wallets/contract.py:9-10
+    // @abimethod(allow_actions = ["OptIn"])
+    // def setBalace(self, balance: UInt64) -> None:
+    proto 1 0
+    // smart_contracts/wallets/contract.py:11
+    // self.local[Txn.sender] = balance
+    txn Sender
+    // smart_contracts/wallets/contract.py:7
+    // self.local = LocalState(UInt64)
+    byte "local"
+    // smart_contracts/wallets/contract.py:11
+    // self.local[Txn.sender] = balance
+    frame_dig -1
+    app_local_put
+    retsub
+
+
+// smart_contracts.wallets.contract.Wallets.getBalance() -> uint64:
+getBalance:
+    // smart_contracts/wallets/contract.py:13-14
+    // @abimethod()
+    // def getBalance(self) -> UInt64:
+    proto 0 1
+    // smart_contracts/wallets/contract.py:15
+    // result, exists = self.local.maybe(Txn.sender)
+    txn Sender
+    int 0
+    // smart_contracts/wallets/contract.py:7
+    // self.local = LocalState(UInt64)
+    byte "local"
+    // smart_contracts/wallets/contract.py:15
+    // result, exists = self.local.maybe(Txn.sender)
+    app_local_get_ex
+    // smart_contracts/wallets/contract.py:16
+    // assert exists, "no data for balance for account"
+    assert // no data for balance for account
+    // smart_contracts/wallets/contract.py:17
+    // return result
+    retsub
